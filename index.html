@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ODEMIND | TECHNICAL_SPEC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'JetBrains Mono', monospace;
+        background-color: #ffffff;
+        color: #000000;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-osx-font-smoothing: grayscale;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      
+      input, textarea, select, button, option {
+        text-transform: uppercase;
+      }
+      
+      ::placeholder {
+        text-transform: uppercase;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 2px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #ffffff;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #000000;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      #root {
+        animation: fadeIn 0.5s ease-in;
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
