@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppState, Project, ArchiveItem } from './types.ts';
 import { INITIAL_PROJECTS, INITIAL_SERVICES, INITIAL_ARCHIVE } from './constants.tsx';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.projects)) {
+            // 구 버전 데이터와 신규 기본 데이터 병합 방지 (저장된 것만 사용)
             return { ...defaultState, ...parsed };
           }
         }
@@ -40,6 +42,9 @@ const App: React.FC = () => {
       localStorage.setItem('odemind_archive_v4_prod', JSON.stringify(state));
     } catch (e) {
       console.error("SYSTEM_SYNC_ERROR", e);
+      if (e instanceof Error && e.name === 'QuotaExceededError') {
+        alert("CRITICAL_ERROR: STORAGE_LIMIT_EXCEEDED. PLEASE_REDUCE_IMAGE_ASSETS.");
+      }
     }
   }, [state]);
 
