@@ -5,11 +5,14 @@ import { INITIAL_PROJECTS, INITIAL_SERVICES, INITIAL_ARCHIVE } from './constants
 import PublicView from './components/PublicView.tsx';
 import AdminView from './components/AdminView.tsx';
 
+const STORAGE_KEY = 'odemind_archive_v5_final';
+
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [state, setState] = useState<AppState>(() => {
     const defaultState: AppState = {
@@ -21,31 +24,35 @@ const App: React.FC = () => {
     };
 
     try {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('odemind_archive_v4_prod');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && Array.isArray(parsed.projects)) {
-            // 구 버전 데이터와 신규 기본 데이터 병합 방지 (저장된 것만 사용)
-            return { ...defaultState, ...parsed };
-          }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 저장된 데이터가 유효한지 최소한의 검사 수행
+        if (parsed && Array.isArray(parsed.projects)) {
+          return { ...defaultState, ...parsed };
         }
       }
     } catch (e) {
-      console.warn("SYSTEM_INIT: STORAGE_READ_FAILED", e);
+      console.warn("SYSTEM: FAILED_TO_LOAD_PERSISTENT_STORAGE", e);
     }
     return defaultState;
   });
 
+  // 상태가 변경될 때마다 LocalStorage에 저장
   useEffect(() => {
-    try {
-      localStorage.setItem('odemind_archive_v4_prod', JSON.stringify(state));
-    } catch (e) {
-      console.error("SYSTEM_SYNC_ERROR", e);
-      if (e instanceof Error && e.name === 'QuotaExceededError') {
-        alert("CRITICAL_ERROR: STORAGE_LIMIT_EXCEEDED. PLEASE_REDUCE_IMAGE_ASSETS.");
+    setIsSyncing(true);
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        setIsSyncing(false);
+      } catch (e) {
+        setIsSyncing(false);
+        if (e instanceof Error && e.name === 'QuotaExceededError') {
+          alert("CRITICAL_ERROR: STORAGE_LIMIT_EXCEEDED.\n이미지가 너무 많거나 큽니다. 일부 프로젝트를 삭제하거나 이미지를 줄여주세요.");
+        }
       }
-    }
+    }, 500); // 디바운싱 처리
+    return () => clearTimeout(timer);
   }, [state]);
 
   const handleAdminToggle = () => {
@@ -66,6 +73,7 @@ const App: React.FC = () => {
     }
   };
 
+  // 데이터 관리 함수들
   const updateProject = (id: string, updated: Project) => {
     setState(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? updated : p) }));
   };
@@ -99,30 +107,39 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black selection:bg-black selection:text-white font-mono custom-scrollbar">
+    <div className="min-h-screen bg-white text-black font-mono selection:bg-black selection:text-white">
+      {/* CMS Access Button */}
       <button 
         onClick={handleAdminToggle}
-        className="fixed bottom-4 right-4 z-50 px-3 py-1.5 border border-black/20 text-[9px] uppercase hover:bg-black hover:text-white transition-all bg-white/50 backdrop-blur-sm shadow-lg font-bold tracking-widest"
+        className="fixed bottom-4 right-4 z-50 px-3 py-1.5 border border-black/20 text-[9px] uppercase hover:bg-black hover:text-white transition-all bg-white/80 backdrop-blur-sm shadow-sm font-bold"
       >
         {isAdmin ? '[ EXIT_CMS ]' : '[ ACCESS_CMS ]'}
       </button>
 
+      {/* Sync Status for Admin */}
+      {isAdmin && isSyncing && (
+        <div className="fixed bottom-12 right-4 z-50 text-[8px] font-black uppercase text-black animate-pulse">
+          [ SYNCING_TO_STORAGE... ]
+        </div>
+      )}
+
+      {/* Auth Overlay */}
       {isAuthenticating && (
-        <div className="fixed inset-0 z-[100] bg-white/90 flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="w-full max-w-xs border border-black p-8 bg-white shadow-2xl">
-            <div className="text-[8px] opacity-40 mb-8 underline tracking-[0.4em] uppercase font-bold text-center">AUTHENTICATION_REQUIRED</div>
+        <div className="fixed inset-0 z-[100] bg-white/95 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xs border-2 border-black p-8 bg-white shadow-2xl">
+            <div className="text-[8px] opacity-40 mb-8 uppercase font-bold text-center tracking-widest">AUTHENTICATION_PROTOCOL</div>
             <form onSubmit={handleAuth} className="space-y-6">
               <input 
                 autoFocus
                 type="password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(false); }}
-                className={`w-full bg-transparent border ${error ? 'border-red-500' : 'border-black/20'} focus:border-black p-3 text-[11px] outline-none tracking-[0.6em] uppercase text-center font-bold`}
+                className={`w-full bg-transparent border-b ${error ? 'border-red-500' : 'border-black'} p-3 text-center text-sm outline-none uppercase font-black tracking-[0.5em]`}
                 placeholder="PASSKEY"
               />
-              <div className="flex gap-3">
-                <button type="submit" className="flex-grow bg-black text-white py-3 text-[10px] font-black uppercase border border-black hover:invert transition-all">OK</button>
-                <button type="button" onClick={() => setIsAuthenticating(false)} className="px-4 border border-black/20 text-[9px] uppercase font-bold">CANCEL</button>
+              <div className="flex gap-2">
+                <button type="submit" className="flex-grow bg-black text-white py-3 text-[10px] font-black uppercase border border-black hover:invert transition-all">CONNECT</button>
+                <button type="button" onClick={() => setIsAuthenticating(false)} className="px-4 border border-black text-[9px] uppercase font-bold">CANCEL</button>
               </div>
             </form>
           </div>
